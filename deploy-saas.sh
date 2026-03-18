@@ -31,28 +31,36 @@ mkdir -p $APP_DIR
 # Nota: Aquí deberías clonar tu repo o copiar el código
 # git clone <URL_DE_TU_REPO_LICENCIAS> $APP_DIR
 
-cd $APP_DIR
+# --- Cargar .env si existe para evitar prompts ---
+if [ -f ".env" ]; then
+    echo ">>> Cargando credenciales desde .env existente..."
+    source .env
+fi
 
 echo ">>> [3/4] Configurando variables de entorno (.env)..."
 if [ ! -f ".env" ]; then
-    read -p "Supabase URL: " SUPABASE_URL
-    read -p "Supabase Anon Key: " SUPABASE_ANON_KEY
-    read -p "Supabase Service Role Key: " SUPABASE_SERVICE_ROLE
-    read -p "Stripe Secret Key: " STRIPE_SECRET
-    read -p "Stripe Webhook Secret: " STRIPE_WEBHOOK
-    read -p "Owner Email (Tu email de admin): " OWNER_EMAIL
+    # Solo preguntar si no están en el ambiente o en el archivo
+    [ -z "$SUPABASE_URL" ] && read -p "Supabase URL: " SUPABASE_URL
+    [ -z "$SUPABASE_ANON_KEY" ] && read -p "Supabase Anon Key: " SUPABASE_ANON_KEY
+    [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && read -p "Supabase Service Role Key: " SUPABASE_SERVICE_ROLE_KEY
+    [ -z "$STRIPE_SECRET_KEY" ] && read -p "Stripe Secret Key: " STRIPE_SECRET_KEY
+    [ -z "$STRIPE_WEBHOOK_SECRET" ] && read -p "Stripe Webhook Secret: " STRIPE_WEBHOOK_SECRET
+    [ -z "$OWNER_EMAIL" ] && read -p "Owner Email (Tu email de admin): " OWNER_EMAIL
 
     cat <<EOF > .env
 SUPABASE_URL="$SUPABASE_URL"
 SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
-SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE"
-STRIPE_SECRET_KEY="$STRIPE_SECRET"
-STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK"
+SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
+STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY"
+STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET"
 OWNER_EMAIL="$OWNER_EMAIL"
 JWT_SECRET="$(openssl rand -hex 32)"
 HOST=0.0.0.0
 PORT=80
 EOF
+    echo ">> .env creado."
+else
+    echo ">> .env ya existe. Saltando configuración manual."
 fi
 
 echo ">>> Instalando paquetes y compilando..."
