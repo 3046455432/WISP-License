@@ -5,7 +5,7 @@ import { getAuthUserAsync } from '../lib/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 
 const user = await getAuthUserAsync(Astro.cookies);
-const db = getSupabaseAdmin();
+const db = await getSupabaseAdmin();
 const { data: planes } = await db.from('plans').select('*').eq('is_active', true).order('price_monthly');
 ---
 <Layout title="Planes — WISP License" user={user}>

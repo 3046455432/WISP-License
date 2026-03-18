@@ -7,7 +7,7 @@ import { getSupabaseAdmin } from '../../lib/supabase';
 const user = await getAuthUserAsync(Astro.cookies);
 if (!user || !isAdmin(user)) return Astro.redirect('/login');
 
-const db = getSupabaseAdmin();
+const db = await getSupabaseAdmin();
 const { data: plans } = await db.from('plans').select('*').order('price_monthly');
 ---
 <Layout title="Admin Planes — WISP License" user={user}>

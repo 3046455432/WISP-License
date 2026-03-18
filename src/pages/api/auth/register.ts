@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
     if (!email || !password) return redirect('/register?error=missing');
 
-    const db = getSupabaseAdmin();
+    const db = await getSupabaseAdmin();
 
     // Check if already exists
     const { data: existing } = await db.from('user_profiles').select('id').eq('email', email).single();

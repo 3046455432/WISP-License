@@ -10,7 +10,7 @@ export const POST: APIRoute = async ({ request }) => {
         const { token } = await request.json();
         if (!token) return json({ valid: false, error: 'Token requerido' }, 400);
 
-        const db = getSupabaseAdmin();
+        const db = await getSupabaseAdmin();
         const { data: license, error } = await db
             .from('licenses')
             .select('*')

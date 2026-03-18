@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
     if (!email || !password) return redirect('/login?error=missing');
 
-    const db = getSupabaseAdmin();
+    const db = await getSupabaseAdmin();
     const { data: profile } = await db
         .from('user_profiles')
         .select('id, email, role, company_name, password_hash')

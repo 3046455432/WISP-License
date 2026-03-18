@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const id = form.get('id')?.toString();
     if (!id) return redirect('/admin/licencias');
 
-    const db = getSupabaseAdmin();
+    const db = await getSupabaseAdmin();
     await db.from('licenses').delete().eq('id', id);
     return redirect('/admin/licencias');
 };

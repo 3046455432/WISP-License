@@ -10,7 +10,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const form = await request.formData();
     const id = form.get('id')?.toString();
 
-    const db = getSupabaseAdmin();
+    const db = await getSupabaseAdmin();
     await db.from('plans').update({
         name: form.get('name')?.toString(),
         price_monthly: parseFloat(form.get('price_monthly')?.toString() || '0'),

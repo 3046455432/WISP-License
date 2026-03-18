@@ -7,7 +7,7 @@ export const POST: APIRoute = async ({ request }) => {
         const { clientName, hostname, serverIp, clientEmail } = await request.json();
         if (!clientName || !hostname) return json({ success: false, error: 'clientName y hostname requeridos' }, 400);
 
-        const db = getSupabaseAdmin();
+        const db = await getSupabaseAdmin();
 
         // Check if already requested by this hostname
         const { data: existing } = await db.from('licenses').select('id, status, token').eq('hostname', hostname).single();
