@@ -1,0 +1,77 @@
+---
+export const prerender = false;
+import Layout from '../layouts/Layout.astro';
+import { getAuthUserAsync } from '../lib/auth';
+import { getSupabaseAdmin } from '../lib/supabase';
+
+const user = await getAuthUserAsync(Astro.cookies);
+const db = getSupabaseAdmin();
+const { data: planes } = await db.from('plans').select('*').eq('is_active', true).order('price_monthly');
+---
+<Layout title="Planes — WISP License" user={user}>
+<div style="max-width:1100px;margin:0 auto;padding:3rem 1rem;">
+    <!-- Hero -->
+    <div style="text-align:center;margin-bottom:3.5rem;">
+        <div style="display:inline-block;background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);border-radius:999px;padding:0.3rem 1rem;font-size:0.8rem;font-weight:700;margin-bottom:1rem;">PLANES Y PRECIOS</div>
+        <h1 style="font-size:2.5rem;font-weight:900;color:#e2e8f0;margin-bottom:0.75rem;">Elige tu plan</h1>
+        <p style="color:#64748b;font-size:1.1rem;max-width:500px;margin:0 auto;">Sin contratos. Cancela cuando quieras. Empieza gratis con tu trial de 14 días.</p>
+    </div>
+
+    <!-- Plans grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;align-items:stretch;">
+        {planes?.map(plan => (
+            <div style={`background:rgba(255,255,255,0.03);border:2px solid ${plan.is_featured ? '#6366f1' : 'rgba(255,255,255,0.08)'};border-radius:1.5rem;padding:2rem;display:flex;flex-direction:column;position:relative;`}>
+                {plan.is_featured && (
+                    <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:#6366f1;color:white;font-size:0.7rem;font-weight:800;padding:0.25rem 1rem;border-radius:0 0 0.75rem 0.75rem;letter-spacing:0.05em;white-space:nowrap;">
+                        ⭐ MÁS POPULAR
+                    </div>
+                )}
+                <div style="margin-bottom:1rem;">
+                    <h2 style="font-size:1.25rem;font-weight:900;color:#e2e8f0;">{plan.name}</h2>
+                    <p style="color:#64748b;font-size:0.875rem;margin-top:0.25rem;">{plan.description}</p>
+                </div>
+                <div style="margin-bottom:1.5rem;">
+                    {plan.price_monthly === 0 ? (
+                        <div style="font-size:2.5rem;font-weight:900;color:#10b981;">Gratis</div>
+                    ) : (
+                        <>
+                            <div style="display:flex;align-items:baseline;gap:0.25rem;">
+                                <span style="font-size:1.25rem;color:#64748b;font-weight:600;">$</span>
+                                <span style="font-size:2.5rem;font-weight:900;color:#e2e8f0;">{plan.price_monthly}</span>
+                                <span style="color:#64748b;">/mes</span>
+                            </div>
+                            {plan.price_yearly > 0 && (
+                                <div style="color:#10b981;font-size:0.8rem;margin-top:0.25rem;font-weight:600;">
+                                    ${plan.price_yearly}/año (ahorra ${((plan.price_monthly * 12) - plan.price_yearly).toFixed(0)})
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+                <ul style="list-style:none;display:flex;flex-direction:column;gap:0.6rem;margin-bottom:2rem;flex:1;">
+                    {(plan.features as string[]).map(f => (
+                        <li style="display:flex;align-items:center;gap:0.5rem;color:#94a3b8;font-size:0.875rem;">
+                            <span style="color:#10b981;font-weight:700;">✓</span> {f}
+                        </li>
+                    ))}
+                </ul>
+                {plan.price_monthly === 0 ? (
+                    <a href={user ? '/dashboard' : '/register'}
+                        style="display:block;text-align:center;background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.5);color:#10b981;border-radius:0.875rem;padding:0.75rem;font-weight:700;text-decoration:none;font-size:0.9rem;">
+                        Comenzar gratis →
+                    </a>
+                ) : (
+                    <a href={user ? `/api/stripe/checkout?plan=${plan.slug}&interval=monthly` : `/login?next=/planes`}
+                        style={`display:block;text-align:center;background:${plan.is_featured ? '#6366f1' : 'rgba(99,102,241,0.2)'};border:1px solid ${plan.is_featured ? 'transparent' : 'rgba(99,102,241,0.4)'};color:${plan.is_featured ? 'white' : '#a5b4fc'};border-radius:0.875rem;padding:0.75rem;font-weight:700;text-decoration:none;font-size:0.9rem;`}>
+                        {user ? 'Suscribirse →' : 'Empezar →'}
+                    </a>
+                )}
+            </div>
+        ))}
+    </div>
+
+    <p style="text-align:center;margin-top:2.5rem;color:#475569;font-size:0.875rem;">
+        ¿Preguntas? <a href="/soporte" style="color:#a5b4fc;text-decoration:none;font-weight:600;">Contáctanos</a>
+    </p>
+</div>
+</Layout>

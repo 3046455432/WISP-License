@@ -1,0 +1,50 @@
+---
+export const prerender = false;
+import Layout from '../layouts/Layout.astro';
+import { getAuthUserAsync } from '../lib/auth';
+const user = await getAuthUserAsync(Astro.cookies);
+---
+<Layout title="WISP License — Plataforma de Licencias" user={user}>
+<div>
+    <!-- Hero -->
+    <div style="text-align:center;padding:5rem 2rem 3rem;max-width:800px;margin:0 auto;">
+        <div style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);border-radius:999px;padding:0.4rem 1.25rem;font-size:0.8rem;font-weight:700;margin-bottom:1.5rem;">
+            🔑 Sistema de Licencias para WISP Manager
+        </div>
+        <h1 style="font-size:3rem;font-weight:900;color:#e2e8f0;line-height:1.1;margin-bottom:1rem;">
+            Gestiona tu ISP con <span style="background:linear-gradient(135deg,#6366f1,#a5b4fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">total control</span>
+        </h1>
+        <p style="font-size:1.15rem;color:#64748b;max-width:550px;margin:0 auto 2.5rem;line-height:1.7;">
+            WISP Manager se instala en tu propio servidor. Paga solo por la licencia. Sin suscripciones ocultas, sin límites arbitrarios.
+        </p>
+        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+            <a href="/register" style="background:#6366f1;color:white;padding:0.875rem 2rem;border-radius:0.875rem;font-weight:700;text-decoration:none;font-size:1rem;display:inline-flex;align-items:center;gap:0.5rem;">
+                🚀 Comenzar Trial Gratis
+            </a>
+            <a href="/planes" style="background:rgba(255,255,255,0.06);color:#e2e8f0;border:1px solid rgba(255,255,255,0.12);padding:0.875rem 2rem;border-radius:0.875rem;font-weight:700;text-decoration:none;font-size:1rem;">
+                Ver Planes →
+            </a>
+        </div>
+    </div>
+
+    <!-- Features -->
+    <div style="max-width:1100px;margin:0 auto;padding:2rem 1rem 5rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;">
+            {[
+                { icon:'🖥️', title:'Self-Hosted', desc:'Instálalo en tu servidor. Tus datos no salen de tu red.' },
+                { icon:'⚡', title:'Fácil instalación', desc:'Un solo comando en Ubuntu. Listo en minutos.' },
+                { icon:'🔄', title:'Auto-updates', desc:'Tu instalación se actualiza sola cada día.' },
+                { icon:'🌐', title:'Multi-router', desc:'Gestiona todos tus MikroTik desde un solo panel.' },
+                { icon:'💰', title:'Facturación', desc:'Cobra a tus clientes directamente desde el sistema.' },
+                { icon:'📊', title:'Reportes', desc:'Monitoreo de tráfico y estadísticas en tiempo real.' },
+            ].map(f => (
+                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:1.25rem;padding:1.5rem;">
+                    <div style="font-size:1.75rem;margin-bottom:0.75rem;">{f.icon}</div>
+                    <h3 style="font-weight:800;color:#e2e8f0;margin-bottom:0.4rem;">{f.title}</h3>
+                    <p style="color:#64748b;font-size:0.875rem;line-height:1.6;">{f.desc}</p>
+                </div>
+            ))}
+        </div>
+    </div>
+</div>
+</Layout>

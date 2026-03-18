@@ -1,0 +1,124 @@
+---
+export const prerender = false;
+import Layout from '../layouts/Layout.astro';
+import { getAuthUserAsync, isAdmin, isOwner } from '../lib/auth';
+import { getSupabaseAdmin } from '../lib/supabase';
+
+const user = await getAuthUserAsync(Astro.cookies);
+if (!user) return Astro.redirect('/login');
+
+const db = getSupabaseAdmin();
+// Get user's license
+const { data: license } = await db
+    .from('licenses')
+    .select('*')
+    .eq('client_email', user.email)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+const { data: profile } = await db
+    .from('user_profiles')
+    .select('full_name, company_name, current_plan_slug')
+    .eq('email', user.email)
+    .single();
+
+const now = new Date();
+const expiry = license?.expires_at ? new Date(license.expires_at) : null;
+const daysLeft = expiry ? Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+const isActive = (license?.status === 'active' && daysLeft !== null && daysLeft > 0) || isOwner(user.email);
+const isPending = license?.status === 'pending' && !isOwner(user.email);
+const isMaster = isOwner(user.email);
+---
+<Layout title="Dashboard — WISP License" user={user}>
+<div style="max-width:900px;margin:0 auto;padding:2rem 1rem;">
+    <!-- Welcome -->
+    <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem;font-weight:900;color:#e2e8f0;">
+            Hola, {profile?.company_name || user.email} 👋
+        </h1>
+        <p style="color:#64748b;margin-top:0.25rem;">Aquí puedes ver el estado de tu licencia y gestionar tu suscripción.</p>
+    </div>
+
+    <!-- License Status Card -->
+    <div style={`background:${isActive ? 'rgba(16,185,129,0.08)' : isPending ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)'};border:1px solid ${isActive ? 'rgba(16,185,129,0.3)' : isPending ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'};border-radius:1.25rem;padding:1.5rem 2rem;margin-bottom:2rem;`}>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+            <div>
+                <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:0.4rem;">Estado de Licencia</div>
+                <div style={`font-size:2rem;font-weight:900;color:${isMaster ? '#818cf8' : isActive ? '#10b981' : isPending ? '#f59e0b' : '#ef4444'};`}>
+                    {isMaster ? '💎 Acceso Maestro' : isActive ? '✅ Activa' : isPending ? '⏳ Pendiente de aprobación' : '❌ Inactiva'}
+                </div>
+                {isMaster && (
+                    <div style="margin-top:0.5rem;color:#94a3b8;font-size:0.9rem;">
+                        Licencia administrativa <strong style="color:#e2e8f0;">Ilimitada y Vitalicia</strong>
+                    </div>
+                )}
+                {!isMaster && isActive && daysLeft !== null && (
+                    <div style="margin-top:0.5rem;color:#94a3b8;font-size:0.9rem;">
+                        Vence en <strong style="color:#e2e8f0;">{daysLeft} días</strong>
+                        {expiry && ` (${expiry.toLocaleDateString('es')})`}
+                    </div>
+                )}
+                {isPending && (
+                    <div style="margin-top:0.5rem;color:#94a3b8;font-size:0.875rem;">
+                        Tu solicitud está siendo revisada. Recibirás acceso pronto.
+                    </div>
+                )}
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:0.4rem;">Plan</div>
+                <div style="font-size:1.25rem;font-weight:800;color:#a5b4fc;text-transform:capitalize;">{isMaster ? 'Master/Admin' : (license?.plan || 'Sin plan')}</div>
+                <div style="font-size:0.8rem;color:#64748b;margin-top:0.25rem;">Hasta {isMaster ? '∞' : (license?.max_routers === -1 ? '∞' : (license?.max_routers || 0))} routers</div>
+            </div>
+        </div>
+        {license?.token && (
+            <div style="margin-top:1.25rem;background:rgba(0,0,0,0.3);border-radius:0.75rem;padding:0.75rem 1rem;">
+                <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;margin-bottom:0.3rem;">Token de Licencia</div>
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <code style="font-size:0.8rem;color:#818cf8;flex:1;word-break:break-all;">{license.token}</code>
+                    <button onclick={`navigator.clipboard.writeText('${license.token}');this.textContent='✅';setTimeout(()=>this.textContent='📋',2000)`}
+                        style="background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);color:#a5b4fc;border-radius:0.5rem;padding:0.35rem 0.75rem;font-size:0.8rem;cursor:pointer;white-space:nowrap;font-family:inherit;">
+                        📋
+                    </button>
+                </div>
+            </div>
+        )}
+    </div>
+
+    <!-- Install Instructions (if active or pending) -->
+    {(isActive || isPending) && (
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:1.25rem;padding:1.5rem 2rem;margin-bottom:2rem;">
+            <h2 style="font-size:1rem;font-weight:800;color:#e2e8f0;margin-bottom:1rem;">📦 Instrucciones de Instalación</h2>
+            <ol style="color:#94a3b8;font-size:0.875rem;line-height:2;padding-left:1.25rem;">
+                <li>En tu servidor Ubuntu, ejecuta:</li>
+            </ol>
+            <pre style="background:rgba(0,0,0,0.4);border-radius:0.75rem;padding:1rem;margin:0.75rem 0;font-size:0.8rem;color:#a5b4fc;overflow-x:auto;">curl -fsSL https://tu-dominio.com/install.sh | sudo bash</pre>
+            <ol start="2" style="color:#94a3b8;font-size:0.875rem;line-height:2;padding-left:1.25rem;">
+                <li>Cuando pida el <strong style="color:#e2e8f0;">Token de Licencia</strong>, copia el token de arriba.</li>
+                <li>Cuando pida la <strong style="color:#e2e8f0;">URL del servidor de licencias</strong>, ingresa la URL de este portal.</li>
+            </ol>
+        </div>
+    )}
+
+    <!-- Quick Actions -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+        <a href="/planes" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:1rem;padding:1.25rem;text-decoration:none;transition:all .2s;display:block;">
+            <div style="font-size:1.5rem;margin-bottom:0.5rem;">📋</div>
+            <div style="font-weight:700;color:#a5b4fc;font-size:0.95rem;">Ver Planes</div>
+            <div style="color:#64748b;font-size:0.8rem;margin-top:0.25rem;">Upgraar tu suscripción</div>
+        </a>
+        {isActive && (
+            <a href="/renovar" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:1rem;padding:1.25rem;text-decoration:none;transition:all .2s;display:block;">
+                <div style="font-size:1.5rem;margin-bottom:0.5rem;">🔄</div>
+                <div style="font-weight:700;color:#10b981;font-size:0.95rem;">Renovar</div>
+                <div style="color:#64748b;font-size:0.8rem;margin-top:0.25rem;">Extender tu licencia</div>
+            </a>
+        )}
+        <a href="/soporte" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:1rem;padding:1.25rem;text-decoration:none;transition:all .2s;display:block;">
+            <div style="font-size:1.5rem;margin-bottom:0.5rem;">💬</div>
+            <div style="font-weight:700;color:#e2e8f0;font-size:0.95rem;">Soporte</div>
+            <div style="color:#64748b;font-size:0.8rem;margin-top:0.25rem;">Contactar al equipo</div>
+        </a>
+    </div>
+</div>
+</Layout>

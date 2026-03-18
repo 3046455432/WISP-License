@@ -1,0 +1,64 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { getAuthUserAsync, isAdmin } from '../../lib/auth';
+import { getSupabaseAdmin } from '../../lib/supabase';
+
+const user = await getAuthUserAsync(Astro.cookies);
+if (!user || !isAdmin(user)) return Astro.redirect('/login');
+
+const db = getSupabaseAdmin();
+const { data: clients } = await db
+    .from('user_profiles')
+    .select('*, licenses(status, plan, expires_at)')
+    .order('created_at', { ascending: false });
+---
+<Layout title="Admin Clientes — WISP License" user={user}>
+<div style="max-width:1200px;margin:0 auto;padding:2rem 1rem;">
+    <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem;font-weight:900;color:#e2e8f0;">👥 Clientes</h1>
+        <nav style="display:flex;gap:1rem;margin-top:0.5rem;">
+            <a href="/admin/licencias" style="color:#64748b;font-size:0.875rem;font-weight:600;text-decoration:none;">Licencias</a>
+            <a href="/admin/planes" style="color:#64748b;font-size:0.875rem;font-weight:600;text-decoration:none;">Planes</a>
+            <a href="/admin/clientes" style="color:#a5b4fc;font-size:0.875rem;font-weight:700;text-decoration:none;border-bottom:2px solid #6366f1;padding-bottom:2px;">Clientes</a>
+        </nav>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:1.25rem;overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+                <thead>
+                    <tr style="background:rgba(255,255,255,0.04);">
+                        {['Cliente', 'Empresa', 'Plan Actual', 'Estado Licencia', 'Registrado'].map(h => (
+                            <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#64748b;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">{h}</th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {clients?.map(c => {
+                        const lastLicense = (c.licenses as any)?.[0];
+                        return (
+                            <tr style="border-top:1px solid rgba(255,255,255,0.05);">
+                                <td style="padding:0.75rem 1rem;">
+                                    <div style="font-weight:600;color:#e2e8f0;">{c.full_name || '—'}</div>
+                                    <div style="font-size:0.75rem;color:#64748b;">{c.email}</div>
+                                </td>
+                                <td style="padding:0.75rem 1rem;color:#94a3b8;">{c.company_name || '—'}</td>
+                                <td style="padding:0.75rem 1rem;text-transform:capitalize;color:#94a3b8;">{c.current_plan_slug || 'Trial'}</td>
+                                <td style="padding:0.75rem 1rem;">
+                                    <span style={`background:${lastLicense?.status==='active'?'rgba(16,185,129,0.15)':lastLicense?.status==='pending'?'rgba(245,158,11,0.15)':'rgba(100,116,139,0.15)'};color:${lastLicense?.status==='active'?'#10b981':lastLicense?.status==='pending'?'#f59e0b':'#94a3b8'};border-radius:999px;padding:0.2rem 0.75rem;font-size:0.75rem;font-weight:700;`}>
+                                        {lastLicense?.status || 'Sin licencia'}
+                                    </span>
+                                </td>
+                                <td style="padding:0.75rem 1rem;color:#64748b;font-size:0.8rem;">
+                                    {new Date(c.created_at).toLocaleDateString('es')}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</Layout>

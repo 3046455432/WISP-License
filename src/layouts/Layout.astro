@@ -1,0 +1,71 @@
+---
+export interface Props {
+    title?: string;
+    user?: { email: string; role: string; companyName?: string } | null;
+}
+const { title = 'WISP License', user } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0a0f1e;
+            --surface: rgba(255,255,255,0.04);
+            --border: rgba(255,255,255,0.08);
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --indigo: #6366f1;
+            --indigo-light: #a5b4fc;
+            --emerald: #10b981;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        nav {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1rem 2rem; border-bottom: 1px solid var(--border);
+            background: rgba(10,15,30,0.8); backdrop-filter: blur(12px);
+            position: sticky; top: 0; z-index: 50;
+        }
+        .nav-brand { font-weight: 900; font-size: 1.1rem; color: var(--indigo-light); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+        .nav-links { display: flex; align-items: center; gap: 1rem; }
+        .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color .2s; }
+        .nav-links a:hover { color: var(--text); }
+        .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; text-decoration: none; transition: all .2s; cursor: pointer; border: none; }
+        .btn-primary { background: var(--indigo); color: white; }
+        .btn-primary:hover { background: #4f46e5; }
+        .btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.08); }
+        .btn-sm { padding: 0.375rem 0.875rem; font-size: 0.8rem; }
+        main { min-height: calc(100vh - 64px); }
+    </style>
+</head>
+<body>
+    <nav>
+        <a class="nav-brand" href="/"> 🔑 WISP License </a>
+        <div class="nav-links">
+            <a href="/planes">Planes</a>
+            {user ? (
+                <>
+                    <a href="/dashboard">Dashboard</a>
+                    {user.role === 'admin' && <a href="/admin/licencias">Admin</a>}
+                    <a class="btn btn-ghost btn-sm" href="/api/auth/logout">Cerrar Sesión</a>
+                </>
+            ) : (
+                <>
+                    <a href="/login">Iniciar Sesión</a>
+                    <a class="btn btn-primary btn-sm" href="/register">Registrarse</a>
+                </>
+            )}
+        </div>
+    </nav>
+    <main>
+        <slot/>
+    </main>
+</body>
+</html>

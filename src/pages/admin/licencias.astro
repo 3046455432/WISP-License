@@ -1,0 +1,126 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { getAuthUserAsync, isAdmin } from '../../lib/auth';
+import { getSupabaseAdmin } from '../../lib/supabase';
+
+const user = await getAuthUserAsync(Astro.cookies);
+if (!user || !isAdmin(user)) return Astro.redirect('/login');
+
+const db = getSupabaseAdmin();
+const { data: licenses } = await db.from('licenses').select('*').order('created_at', { ascending: false });
+
+const now = new Date();
+const pending = licenses?.filter(l => l.status === 'pending') || [];
+const active = licenses?.filter(l => l.status === 'active' && new Date(l.expires_at) > now) || [];
+const expired = licenses?.filter(l => new Date(l.expires_at) < now && l.status !== 'pending') || [];
+---
+<Layout title="Admin Licencias — WISP License" user={user}>
+<div style="max-width:1200px;margin:0 auto;padding:2rem 1rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;">
+        <div>
+            <h1 style="font-size:1.75rem;font-weight:900;color:#e2e8f0;">🔑 Licencias</h1>
+            <nav style="display:flex;gap:1rem;margin-top:0.5rem;">
+                <a href="/admin/licencias" style="color:#a5b4fc;font-size:0.875rem;font-weight:700;text-decoration:none;border-bottom:2px solid #6366f1;padding-bottom:2px;">Licencias</a>
+                <a href="/admin/planes" style="color:#64748b;font-size:0.875rem;font-weight:600;text-decoration:none;">Planes</a>
+                <a href="/admin/clientes" style="color:#64748b;font-size:0.875rem;font-weight:600;text-decoration:none;">Clientes</a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem;">
+        {[
+            { label: 'Total', value: licenses?.length || 0, color: '#e2e8f0' },
+            { label: 'Activas', value: active.length, color: '#10b981' },
+            { label: 'Pendientes', value: pending.length, color: '#f59e0b' },
+            { label: 'Vencidas', value: expired.length, color: '#ef4444' },
+        ].map(s => (
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:1rem;padding:1rem 1.25rem;">
+                <div style={`font-size:1.75rem;font-weight:900;color:${s.color}`}>{s.value}</div>
+                <div style="font-size:0.75rem;color:#64748b;margin-top:0.2rem;">{s.label}</div>
+            </div>
+        ))}
+    </div>
+
+    <!-- Pending Banner -->
+    {pending.length > 0 && (
+        <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:1.25rem;overflow:hidden;margin-bottom:2rem;">
+            <div style="background:rgba(245,158,11,0.15);padding:0.75rem 1.5rem;font-size:0.8rem;font-weight:800;color:#f59e0b;text-transform:uppercase;letter-spacing:0.05em;">
+                ⏳ {pending.length} Solicitud{pending.length > 1 ? 'es' : ''} Pendiente{pending.length > 1 ? 's' : ''}
+            </div>
+            {pending.map(l => (
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-top:1px solid rgba(245,158,11,0.15);flex-wrap:wrap;gap:1rem;">
+                    <div>
+                        <div style="font-weight:700;color:#e2e8f0;">{l.client_name}</div>
+                        <div style="font-size:0.8rem;color:#64748b;">{l.client_email} · {l.hostname || '—'} · Trial 14d</div>
+                        <code style="font-size:0.75rem;color:#a5b4fc;">{l.token}</code>
+                    </div>
+                    <div style="display:flex;gap:0.75rem;">
+                        <form method="POST" action="/api/admin/approve-license" style="display:inline;">
+                            <input type="hidden" name="id" value={l.id}/>
+                            <button type="submit" style="background:#10b981;color:white;border:none;border-radius:0.75rem;padding:0.5rem 1rem;font-weight:700;font-size:0.8rem;cursor:pointer;font-family:inherit;">✅ Aprobar</button>
+                        </form>
+                        <form method="POST" action="/api/admin/reject-license" style="display:inline;">
+                            <input type="hidden" name="id" value={l.id}/>
+                            <button type="submit" style="background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:0.75rem;padding:0.5rem 1rem;font-weight:700;font-size:0.8rem;cursor:pointer;font-family:inherit;">❌ Rechazar</button>
+                        </form>
+                    </div>
+                </div>
+            ))}
+        </div>
+    )}
+
+    <!-- All Licenses Table -->
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:1.25rem;overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+                <thead>
+                    <tr style="background:rgba(255,255,255,0.04);">
+                        {['Cliente', 'Token', 'Plan', 'Estado', 'Expira', 'Routers', 'Acciones'].map(h => (
+                            <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#64748b;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">{h}</th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {licenses?.filter(l => l.status !== 'pending').map(l => {
+                        const exp = new Date(l.expires_at);
+                        const expColor = exp < now ? '#ef4444' : '';
+                        return (
+                            <tr style="border-top:1px solid rgba(255,255,255,0.05);">
+                                <td style="padding:0.75rem 1rem;">
+                                    <div style="font-weight:600;color:#e2e8f0;">{l.client_name}</div>
+                                    <div style="font-size:0.75rem;color:#64748b;">{l.client_email || ''}</div>
+                                </td>
+                                <td style="padding:0.75rem 1rem;">
+                                    <code style="font-size:0.75rem;color:#818cf8;">{l.token?.slice(0,16)}…</code>
+                                </td>
+                                <td style="padding:0.75rem 1rem;text-transform:capitalize;color:#94a3b8;">{l.plan}</td>
+                                <td style="padding:0.75rem 1rem;">
+                                    <span style={`background:${l.status==='active'?'rgba(16,185,129,0.15)':l.status==='expired'?'rgba(239,68,68,0.15)':'rgba(100,116,139,0.15)'};color:${l.status==='active'?'#10b981':l.status==='expired'?'#ef4444':'#94a3b8'};border-radius:999px;padding:0.2rem 0.75rem;font-size:0.75rem;font-weight:700;`}>
+                                        {l.status}
+                                    </span>
+                                </td>
+                                <td style={`padding:0.75rem 1rem;font-size:0.8rem;color:${expColor||'#94a3b8'};`}>{exp.toLocaleDateString('es')}</td>
+                                <td style="padding:0.75rem 1rem;color:#94a3b8;">{l.max_routers === -1 ? '∞' : l.max_routers}</td>
+                                <td style="padding:0.75rem 1rem;">
+                                    <div style="display:flex;gap:0.5rem;">
+                                        <form method="POST" action="/api/admin/renew-license">
+                                            <input type="hidden" name="id" value={l.id}/>
+                                            <button style="color:#818cf8;background:none;border:none;cursor:pointer;font-size:0.8rem;font-family:inherit;">+30d</button>
+                                        </form>
+                                        <form method="POST" action="/api/admin/reject-license">
+                                            <input type="hidden" name="id" value={l.id}/>
+                                            <button style="color:#ef4444;background:none;border:none;cursor:pointer;font-size:0.8rem;font-family:inherit;">Eliminar</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</Layout>
