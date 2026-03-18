@@ -20,7 +20,7 @@ export const POST: APIRoute = async ({ request }) => {
         const { userEmail, planSlug, interval } = session.metadata || {};
 
         if (userEmail && planSlug) {
-            const db = getSupabaseAdmin();
+            const db = await getSupabaseAdmin();
             const { data: plan } = await db.from('plans').select('*').eq('slug', planSlug).single();
 
             const durationDays = interval === 'yearly' ? 365 : 30;
@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ request }) => {
         const sub = event.data.object as Stripe.Subscription;
         const email = (sub.metadata as any)?.userEmail;
         if (email) {
-            const db = getSupabaseAdmin();
+            const db = await getSupabaseAdmin();
             await db.from('licenses').update({ status: 'expired' }).eq('client_email', email);
         }
     }
