@@ -1,0 +1,61 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { getAuthUserAsync, isAdmin } from '../../lib/auth';
+import { getAllConfigs } from '../../lib/config';
+
+const user = await getAuthUserAsync(Astro.cookies);
+if (!user || !isAdmin(user)) return Astro.redirect('/login');
+
+const config = await getAllConfigs();
+---
+
+<Layout title="Configuración Sistema — WISP License" user={user}>
+<div style="max-width:800px;margin:0 auto;padding:2rem 1rem;">
+    <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem;font-weight:900;color:#e2e8f0;">⚙️ Configuración</h1>
+        <nav style="display:flex;gap:1rem;margin-top:0.5rem;">
+            <a href="/admin/licencias" style="color:#64748b;font-size:0.875rem;font-weight:600;text-decoration:none;">Licencias</a>
+            <a href="/admin/planes" style="color:#64748b;font-size:0.875rem;font-weight:600;text-decoration:none;">Planes</a>
+            <a href="/admin/configuracion" style="color:#a5b4fc;font-size:0.875rem;font-weight:700;text-decoration:none;border-bottom:2px solid #6366f1;padding-bottom:2px;">Sistema</a>
+        </nav>
+    </div>
+
+    <form method="POST" action="/api/admin/save-config" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:1.5rem;padding:2rem;display:flex;flex-direction:column;gap:1.5rem;">
+        
+        <div>
+            <h3 style="color:#818cf8;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:1rem;font-weight:800;">Supabase (Base de Datos)</h3>
+            <div style="display:grid;gap:1rem;">
+                <div style="display:flex;flex-direction:column;gap:0.4rem;">
+                    <label style="font-size:0.8rem;color:#64748b;font-weight:600;">SUPABASE_URL</label>
+                    <input name="SUPABASE_URL" value={config.SUPABASE_URL} style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);padding:0.75rem;border-radius:0.75rem;color:white;font-family:monospace;font-size:0.85rem;"/>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0.4rem;">
+                    <label style="font-size:0.8rem;color:#64748b;font-weight:600;">SUPABASE_SERVICE_ROLE_KEY</label>
+                    <input type="password" name="SUPABASE_SERVICE_ROLE_KEY" value={config.SUPABASE_SERVICE_ROLE_KEY} style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);padding:0.75rem;border-radius:0.75rem;color:white;font-family:monospace;font-size:0.85rem;"/>
+                </div>
+            </div>
+        </div>
+
+        <div style="height:1px;background:rgba(255,255,255,0.05);"></div>
+
+        <div>
+            <h3 style="color:#10b981;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:1rem;font-weight:800;">Stripe (Pagos)</h3>
+            <div style="display:grid;gap:1rem;">
+                <div style="display:flex;flex-direction:column;gap:0.4rem;">
+                    <label style="font-size:0.8rem;color:#64748b;font-weight:600;">STRIPE_SECRET_KEY</label>
+                    <input type="password" name="STRIPE_SECRET_KEY" value={config.STRIPE_SECRET_KEY} placeholder="sk_test_..." style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);padding:0.75rem;border-radius:0.75rem;color:white;font-family:monospace;font-size:0.85rem;"/>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0.4rem;">
+                    <label style="font-size:0.8rem;color:#64748b;font-weight:600;">PUBLIC_STRIPE_PUBLISHABLE_KEY</label>
+                    <input name="PUBLIC_STRIPE_PUBLISHABLE_KEY" value={config.PUBLIC_STRIPE_PUBLISHABLE_KEY} placeholder="pk_test_..." style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);padding:0.75rem;border-radius:0.75rem;color:white;font-family:monospace;font-size:0.85rem;"/>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" style="background:#6366f1;color:white;border:none;padding:1rem;border-radius:1rem;font-weight:700;font-size:1rem;cursor:pointer;margin-top:1rem;transition:transform .2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+            Guardar Configuración
+        </button>
+    </form>
+</div>
+</Layout>

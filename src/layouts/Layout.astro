@@ -53,7 +53,12 @@ const { title = 'WISP License', user } = Astro.props;
             {user ? (
                 <>
                     <a href="/dashboard">Dashboard</a>
-                    {user.role === 'admin' && <a href="/admin/licencias">Admin</a>}
+                    {user.role === 'admin' && (
+                        <>
+                            <a href="/admin/licencias">Admin</a>
+                            <a href="/admin/configuracion" style="color:var(--indigo-light); font-size: 0.8rem;">⚙️</a>
+                        </>
+                    )}
                     <a class="btn btn-ghost btn-sm" href="/api/auth/logout">Cerrar Sesión</a>
                 </>
             ) : (

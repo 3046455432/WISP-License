@@ -11,11 +11,15 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     const planSlug = url.searchParams.get('plan') || 'basico';
     const interval = url.searchParams.get('interval') === 'yearly' ? 'yearly' : 'monthly';
 
-    const db = getSupabaseAdmin();
-    const { data: plan } = await db.from('plans').select('*').eq('slug', planSlug).single();
+    const dbConfig = await createClient(
+        await getConfigValue('SUPABASE_URL'),
+        await getConfigValue('SUPABASE_SERVICE_ROLE_KEY')
+    );
+    const { data: plan } = await dbConfig.from('plans').select('*').eq('slug', planSlug).single();
     if (!plan) return new Response('Plan no encontrado', { status: 404 });
 
-    const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY);
+    const stripeKey = await getConfigValue('STRIPE_SECRET_KEY');
+    const stripe = new Stripe(stripeKey);
 
     const priceId = interval === 'yearly' ? plan.stripe_price_id_yearly : plan.stripe_price_id_monthly;
 

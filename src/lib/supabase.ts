@@ -1,15 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
+import { getConfigValue } from './config';
 
-export function getSupabaseAdmin() {
+export async function getSupabaseAdmin() {
     return createClient(
-        import.meta.env.SUPABASE_URL,
-        import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+        await getConfigValue('SUPABASE_URL'),
+        await getConfigValue('SUPABASE_SERVICE_ROLE_KEY')
     );
 }
 
-export function getSupabaseClient() {
+export async function getSupabaseClient() {
     return createClient(
-        import.meta.env.PUBLIC_SUPABASE_URL,
-        import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+        await getConfigValue('SUPABASE_URL'),
+        await getConfigValue('SUPABASE_ANON_KEY')
     );
 }
